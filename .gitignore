@@ -1,0 +1,15 @@
+# Python & VS Code
+__pycache__/
+.env
+*.pyc
+.vscode/
+
+# Logs & screenshots
+logs/
+screenshot_*.png
+confirmation_*.png
+visa_checker_*.log
+
+# Virtual‑envs
+venv/
+.env/
