@@ -40,7 +40,7 @@ driver = webdriver.Chrome(service=service, options=options)
 
 # -------- Logging Setup --------
 log_date = datetime.now().strftime("%Y%m%d")
-log_filename = f"visa_checker_{log_date}.log"
+log_filename = f"logs/visa_checker_{log_date}.log"
 logging.basicConfig(filename=log_filename, level=logging.INFO, 
                     format='%(asctime)s - %(levelname)s - %(message)s',)
 

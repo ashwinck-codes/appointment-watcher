@@ -3,6 +3,8 @@ __pycache__/
 .env
 *.pyc
 .vscode/
+visa_checker_batch.txt
+visa_checker_batch.bat
 
 # Logs & screenshots
 logs/
