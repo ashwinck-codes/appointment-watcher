@@ -1,21 +1,24 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.support.ui import Select
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
-import ctypes
-from datetime import datetime
-from dotenv import load_dotenv
-from time import strptime
 import calendar
 import logging
-import requests
-import time
-import sys
 import os
+import platform
+import requests
+import subprocess
+import sys
+import time
+from datetime import datetime
+from dotenv import load_dotenv
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import WebDriverWait
+from time import strptime
+
+IS_WINDOWS = platform.system() == "Windows"
+IS_MAC = platform.system() == "Darwin"
 
 # --- CONFIG ---
 load_dotenv()
@@ -40,7 +43,10 @@ driver = webdriver.Chrome(service=service, options=options)
 
 # -------- Logging Setup --------
 log_date = datetime.now().strftime("%Y%m%d")
-log_filename = f"logs/visa_checker_{log_date}.log"
+log_dir = "logs"
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+log_filename = f"{log_dir}/visa_checker_{log_date}.log"
 logging.basicConfig(filename=log_filename, level=logging.INFO, 
                     format='%(asctime)s - %(levelname)s - %(message)s',)
 
@@ -77,7 +83,12 @@ def login():
     time.sleep(2) # Increase wait time to ensure page loads completely
     try:
         # Try to find elements with explicit waits
-        ctypes.windll.kernel32.SetThreadExecutionState(0x80000002)
+        if IS_WINDOWS:
+            import ctypes
+            ctypes.windll.kernel32.SetThreadExecutionState(0x80000002)
+        elif IS_MAC:
+            # Prevent sleep on Mac using caffeinate (optional, runs in background)
+            subprocess.Popen(["caffeinate", "-dimsu"])  # This will keep the system awake while script runs
         email_input = driver.find_element(By.ID, "user_email")
         password_input = driver.find_element(By.ID, "user_password")
         email_input.send_keys(EMAIL)
@@ -282,7 +293,10 @@ def check_visa_availability(retry_delay = 60):
                 send_telegram_alert(msg)
                 logging.critical(msg)
                 time.sleep(5)
-                os.system("shutdown /h")  # Windows Hibernate in 5 seconds
+                if IS_WINDOWS:
+                    os.system("shutdown /h")  # Windows Hibernate
+                elif IS_MAC:
+                    os.system("pmset sleepnow") # On Mac, use pmset to sleep
                 break  # Exit program loop
             attempt += 1
             busy_count += 1

@@ -1,10 +1,13 @@
 # Python & VS Code
 __pycache__/
+.idea/
 .env
 *.pyc
+.DS_Store
 .vscode/
 visa_checker_batch.txt
 visa_checker_batch.bat
+visa_checker.sh
 
 # Logs & screenshots
 logs/
