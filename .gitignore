@@ -18,3 +18,4 @@ visa_checker_*.log
 # Virtual‑envs
 venv/
 .env/
+cron.log

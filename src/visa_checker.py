@@ -137,6 +137,11 @@ def select_time_slot_and_confirm(earliest, timeout=8, poll_frequency=0.5):
                 time_dropdown_element.click()
                 dropdown = Select(time_dropdown_element)
                 options = dropdown.options
+                # Print and log all available time slots
+                logging.info("Available time slots:")
+                for idx, option in enumerate(options):
+                    logging.info(f"{idx}: {option.text}")
+                
 
                 if len(options) > 0:
                     dropdown.select_by_index(1)
@@ -176,7 +181,7 @@ def select_time_slot_and_confirm(earliest, timeout=8, poll_frequency=0.5):
             time.sleep(poll_frequency)
 
         logging.warning("⚠️ Time slot selection timed out.")
-        filename = datetime.now().strftime("screenshot_%Y%m%d_%H%M%S.png")
+        filename = datetime.now().strftime("logs/screenshot_%Y%m%d_%H%M%S.png")
         driver.execute_script("window.scrollBy(0, 300);")   # Scroll down by 300 pixels
         #time.sleep(1)
         driver.save_screenshot(filename)
