@@ -169,13 +169,8 @@ def select_time_slot_and_confirm(earliest, timeout=8, poll_frequency=0.5):
                         return None
 
             except (NoSuchElementException, StaleElementReferenceException) as e:
-                # DOM likely still loading; retry
-                # filename = datetime.now().strftime("screenshot_%Y%m%d_%H%M%S.png")
-                # driver.execute_script("window.scrollBy(0, 300);")   # Scroll down by 300 pixels
-                #time.sleep(1)
-                # driver.save_screenshot(filename)
                 logging.error(f"Error selecting time slot: {e}")
-                send_telegram_alert("⚠️ Error selecting time slot")
+                #send_telegram_alert("⚠️ Error selecting time slot")
                 
 
             time.sleep(poll_frequency)
@@ -255,7 +250,7 @@ def get_earliest_available_date():
 
     return earliest_datetime
 
-def check_visa_availability(retry_delay = 60):
+def check_visa_availability(retry_delay = 56):
     attempt = 1
     busy_count = 0
 
@@ -273,14 +268,14 @@ def check_visa_availability(retry_delay = 60):
             logging.info("Selected Toronto in dropdown.")
         except (NoSuchElementException) as e:
             logging.warning(f"Webpage did not load during retry")
-            send_telegram_alert("⚠️ Webpage did not load during retry")
+            #send_telegram_alert("⚠️ Webpage did not load during retry")
             attempt += 1
             time.sleep(15)
             check_if_session_expired()
             continue
         except Exception as e:
             logging.error(f"Failed to select Toronto: {e}")
-            send_telegram_alert("⚠️ Failed to select Toronto in dropdown")
+            #send_telegram_alert("⚠️ Failed to select Toronto in dropdown")
             attempt += 1
             time.sleep(2)
             check_if_session_expired()      # future - this is not req
@@ -305,7 +300,7 @@ def check_visa_availability(retry_delay = 60):
                 break  # Exit program loop
             attempt += 1
             busy_count += 1
-            time.sleep(retry_delay * 10) #10min wait when System is Busy
+            time.sleep(60 * 10) #10min wait when System is Busy
             continue
 
         
