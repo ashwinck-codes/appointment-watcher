@@ -6,7 +6,8 @@ import requests
 import subprocess
 import sys
 import time
-from datetime import datetime
+import pytz
+from datetime import datetime, time as tm
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
@@ -121,72 +122,6 @@ def open_calendar():
     time.sleep(0.5)
 
 
-# ----Select Time Slot and Confirm --------------
-def select_time_slot_and_confirm(earliest, timeout=8, poll_frequency=0.5):
-    """Swiftly selects the first valid time slot and confirms the appointment using the 'Reschedule' button."""
-
-    start_time = time.time()
-    try:
-        # Step 1: Wait for the dropdown to appear
-        #WebDriverWait(driver, timeout).until(EC.presence_of_element_located((By.ID, "appointments_consulate_appointment_time")))
-        WebDriverWait(driver, timeout).until(EC.element_to_be_clickable((By.ID, "appointments_consulate_appointment_time"))) 
-        # Step 2: Keep checking for real options
-        while time.time() - start_time < timeout:
-            try:
-                time_dropdown_element = driver.find_element(By.ID, "appointments_consulate_appointment_time")
-                time_dropdown_element.click()
-                dropdown = Select(time_dropdown_element)
-                options = dropdown.options
-                # Print and log all available time slots
-                logging.info("Available time slots:")
-                for idx, option in enumerate(options):
-                    logging.info(f"{idx}: {option.text}")
-                
-
-                if len(options) > 0:
-                    dropdown.select_by_index(1)
-                    selected_time = options[1].text
-                    logging.info(f"Time slot selected: {selected_time}")
-
-                    # Step 3: Find the 'Reschedule' button (priority)
-                    confirm_button = None
-                    button_texts = ['Reschedule', 'Confirm', 'Submit']  # Prioritized
-
-                    for text in button_texts:
-                        buttons = driver.find_elements(By.XPATH, f"//input[@value='{text}'] | //button[contains(text(), '{text}')]")
-                        if buttons:
-                            confirm_button = buttons[0]
-                            break
-
-                    if confirm_button:
-                        confirm_button.click()
-                        logging.info(f"Clicked confirmation button: {text}")
-                        appt_time = selected_time.split(":")
-                        earliest_datetime = earliest.replace(hour= int(appt_time[0]), minute= int(appt_time[1]))
-                        return earliest_datetime
-                    else:
-                        logging.warning("⚠️ Could not find confirmation button.")
-                        return None
-
-            except (NoSuchElementException, StaleElementReferenceException) as e:
-                logging.error(f"Error selecting time slot: {e}")
-                #send_telegram_alert("⚠️ Error selecting time slot")
-                
-
-            time.sleep(poll_frequency)
-
-        logging.warning("⚠️ Time slot selection timed out.")
-        filename = datetime.now().strftime("logs/screenshot_%Y%m%d_%H%M%S.png")
-        driver.execute_script("window.scrollBy(0, 300);")   # Scroll down by 300 pixels
-        #time.sleep(1)
-        driver.save_screenshot(filename)
-        send_telegram_alert("⚠️ Time slot selection timed out.")
-        return None
-
-    except TimeoutException:
-        logging.error("⚠️ Time dropdown failed to load.")
-        return None 
-        
 
 # --------Fetch Earliest Avail date-----
 def get_earliest_available_date():
@@ -250,7 +185,65 @@ def get_earliest_available_date():
 
     return earliest_datetime
 
-def check_visa_availability(retry_delay = 56):
+
+
+# ----Select Time Slot and Confirm --------------
+def select_time_slot_and_confirm(earliest, timeout=8, poll_frequency=0.5):
+    """Swiftly selects the first valid time slot and confirms the appointment using the 'Reschedule' button."""
+
+    start_time = time.time()
+    try:
+        # Step 1: Wait for the dropdown to appear
+        #WebDriverWait(driver, timeout).until(EC.presence_of_element_located((By.ID, "appointments_consulate_appointment_time")))
+        WebDriverWait(driver, timeout).until(EC.element_to_be_clickable((By.ID, "appointments_consulate_appointment_time"))) 
+        # Step 2: Keep checking for real options
+        while time.time() - start_time < timeout:
+            try:
+                time_dropdown_element = driver.find_element(By.ID, "appointments_consulate_appointment_time")
+                time_dropdown_element.click()
+                dropdown = Select(time_dropdown_element)
+                options = dropdown.options
+                if len(options) > 0:
+                    dropdown.select_by_index(1)
+                    selected_time = options[1].text
+                    logging.info(f"Time slot selected: {selected_time}")
+
+                    text = "Reschedule"
+                    confirm_button = driver.find_elements(By.XPATH, f"//input[@value='{text}'] | //button[contains(text(), '{text}')]")
+
+                    if confirm_button:
+                        confirm_button.click()
+                        logging.info(f"Clicked confirmation button: {text}")
+                        appt_time = selected_time.split(":")
+                        earliest_datetime = earliest.replace(hour= int(appt_time[0]), minute= int(appt_time[1]))
+                        return earliest_datetime
+                    else:
+                        logging.warning("⚠️ Could not find confirmation button.")
+                        return None
+
+            except (NoSuchElementException, StaleElementReferenceException) as e:
+                logging.error(f"Error selecting time slot: {e}")
+                #send_telegram_alert("⚠️ Error selecting time slot")
+                
+
+            time.sleep(poll_frequency)
+
+        logging.warning("⚠️ Time slot selection timed out.")
+        filename = datetime.now().strftime("logs/screenshot_%Y%m%d_%H%M%S.png")
+        driver.execute_script("window.scrollBy(0, 300);")   # Scroll down by 300 pixels
+        #time.sleep(1)
+        driver.save_screenshot(filename)
+        send_telegram_alert("⚠️ Time slot selection timed out.")
+        return None
+
+    except TimeoutException:
+        logging.error("⚠️ Time dropdown failed to load.")
+        return None 
+        
+
+
+
+def check_visa_availability(retry_delay = 55):
     attempt = 1
     busy_count = 0
 
@@ -288,7 +281,12 @@ def check_visa_availability(retry_delay = 56):
             busy_count = 0  # Reset on success
         except Exception as e:
             logging.error(f"Failed to open calendar / System Busy")
-            if busy_count > 4:
+            pst = pytz.timezone('America/Los_Angeles')
+            pst_now = datetime.now(pst).time()
+            if (pst_now >= tm(16, 1) or pst_now< tm(2, 0)):
+                time.sleep(60)
+                continue
+            elif busy_count > 4:
                 msg = "🌙 System busy for 50 mins. Exiting and Hibernating machine."
                 send_telegram_alert(msg)
                 logging.critical(msg)
