@@ -112,7 +112,7 @@ def select_toronto_location():
         if "Toronto" in option.text:
             option.click()
             break
-    time.sleep(1)            # future - see if this can be reduced / removed
+    time.sleep(1)
 
 
 # --------Click to open the date picker-----
@@ -243,7 +243,7 @@ def select_time_slot_and_confirm(earliest, timeout=8, poll_frequency=0.5):
 
 
 
-def check_visa_availability(retry_delay = 55):
+def check_visa_availability(retry_delay = 60):
     attempt = 1
     busy_count = 0
 
@@ -330,4 +330,5 @@ try:
 except KeyboardInterrupt:
     logging.warning("Stopped by user.")
 finally:
+    send_telegram_alert("⚠️ Script is Exiting Program")
     driver.quit()
